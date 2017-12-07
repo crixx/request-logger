@@ -3,23 +3,26 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const proxy = require('express-http-proxy');
+const url = require('url');
 
-const app = express();
 //hostname and port of the target server
-const server = process.env.SERVER || 'http://localhost:8088';
+const server = process.env.SERVER || 'localhost:8088';
 //port of this server
 const port = process.env.PORT || 3120;
 
+const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(morgan('dev'))
 
 app.use('/*', proxy(server, {
+  proxyReqPathResolver: (req) => url.parse(req.originalUrl).path,
   userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
     console.log("----------Client Request Body----------")
-    console.log(JSON.stringify(userReq.body));
+    console.log(JSON.stringify(userReq.body, null, 2));
+
     console.log("----------Server Response Body----------")
-    console.log(JSON.parse(proxyResData.toString('utf8')));
+    console.log(JSON.stringify(JSON.parse(proxyResData.toString('utf8')), null, 2));
     return proxyResData;
   }
 }));
